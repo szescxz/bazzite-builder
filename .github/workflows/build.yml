@@ -3,9 +3,32 @@ on:
   schedule:
     - cron: '0 7 * * *'
   workflow_dispatch:
+    inputs:
+      fedora-major-version:
+        description: Fedora major version
+        default: "38"
+      fedora-variant:
+        description: Fedora variant
+        default: kinoite
+      ublue-flavor:
+        description: Universal Blue flavor
+        default: main
+      ublue-nvidia-version:
+        description: NVIDIA driver version if building `nvidia` flavor
+        default: "0"
+      bazzite-variant:
+        description: Bazzite variant
+        default: bazzite-deck
+env:
+  FEDORA_MAJOR_VERSION: ${{ github.event.inputs.fedora-major-version || "38" }}
+  FEDORA_VARIANT: ${{ github.event.inputs.fedora-variant || "kinoite" }}
+  UBLUE_FLAVOR: ${{ github.event.inputs.ublue-flavor || "main" }}
+  UBLUE_NVIDIA_VERSION: ${{ github.event.inputs.ublue-nvidia-version || "0" }}
+  BAZZITE_VARIANT: ${{ github.event.inputs.bazzite-variant || "bazzite-deck" }}
 
 jobs:
   build-fedora:
+    name: Build Fedora container image
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -14,14 +37,18 @@ jobs:
       options: --privileged
     steps:
       - name: Clone repository
-        run: git clone --branch f38 --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git .
+        run: git clone --branch f${{ env.FEDORA_MAJOR_VERSION }} --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git .
+
       - name: Build image
-        run: just compose-image kinoite
+        run: just compose-image ${{ env.FEDORA_VARIANT }}
+
       - name: Upload image
         run: |
           skopeo login --username "${{ github.actor }}" --password "${{ github.token }}" ghcr.io
-          skopeo copy --retry-times 3 "oci-archive:fedora-kinoite.ociarchive" "docker://ghcr.io/${{ github.repository_owner }}/fedora-kinoite:38"
+          skopeo copy --retry-times 3 "oci-archive:fedora-${{ env.FEDORA_VARIANT }}.ociarchive" "docker://ghcr.io/${{ github.repository_owner }}/fedora-${{ env.FEDORA_VARIANT }}:${{ env.FEDORA_MAJOR_VERSION }}"
+
   build-ublue:
+    name: Build Universal Blue container image
     needs: build-fedora
     permissions:
       packages: write
@@ -31,23 +58,49 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ublue-os/main
+
       - name: Modify image source
         run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
+
+      - name: Generate build variables
+        run: echo "IMAGE_NAME=${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}" >> $GITHUB_ENV
+
+      - name: Get base image version
+        id: labels
+        run: |
+          ver=$(skopeo inspect docker://ghcr.io/${{ github.repository_owner }}/fedora-${{ env.FEDORA_VARIANT }}:${{ env.FEDORA_MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
+          echo "VERSION=$ver" >> $GITHUB_OUTPUT
+
+      - name: Generate image metadata
+        uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: ublue-${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
+            org.opencontainers.image.description=A base Universal Blue ${{ env.FEDORA_VARIANT }} image with batteries included${{ 'nvidia' == env.UBLUE_FLAVOR && ' and Nvidia drivers added' || '' }}
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/ublue-os/main/main/README.md
+            io.artifacthub.package.logo-url=https://avatars.githubusercontent.com/u/120078124?s=200&v=4
+
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
         with:
           containerfiles: |
             ./Containerfile
-          image: ublueos-kinoite-main
-          tags: 38 latest
+          image: ublue-${{ env.IMAGE_NAME }}
+          tags: ${{ env.FEDORA_MAJOR_VERSION }}
           build-args: |
-            IMAGE_NAME=kinoite-main
-            SOURCE_IMAGE=kinoite
-            FEDORA_MAJOR_VERSION=38
+            IMAGE_NAME=${{ env.FEDORA_VARIANT }}
+            SOURCE_IMAGE=${{ env.FEDORA_VARIANT }}
+            FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
+            NVIDIA_MAJOR_VERSION=${{ env.UBLUE_NVIDIA_VERSION }}
+          labels: ${{ steps.meta.outputs.labels }}
           oci: false
           extra-args: |
-            --target=main
+            --target=${{ env.UBLUE_FLAVOR }}
+
       - name: Upload image
         uses: redhat-actions/push-to-registry@v2
         with:
@@ -58,7 +111,9 @@ jobs:
           password: ${{ github.token }}
           extra-args: |
             --disable-content-trust
+
   build-bazzite:
+    name: Build Bazzite container image
     needs: build-ublue
     permissions:
       packages: write
@@ -68,25 +123,65 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ublue-os/bazzite
+
       - name: Modify image source
-        run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublueos-,g' ./Containerfile
+        run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublue-,g' ./Containerfile
+
+      - name: Generate build variables
+        run: |
+          echo "BASE_IMAGE_NAME=${{ env.FEDORA_VARIANT }}" >> $GITHUB_ENV
+          if [[ "${{ env.FEDORA_VARIANT }}" == "silverblue" ]]; then
+              DESKTOP="gnome"
+              if [[ "${{ env.UBLUE_FLAVOR }}" == "main" ]]; then
+                  echo "IMAGE_NAME=${{ format('{0}-{1}', env.BAZZITE_VARIANT, '${DESKTOP}') }}" >> $GITHUB_ENV
+              else
+                  echo "IMAGE_NAME=${{ format('{0}-{1}-{2}', env.BAZZITE_VARIANT, '${DESKTOP}', env.UBLUE_FLAVOR) }}" >> $GITHUB_ENV
+              fi
+          else
+              if [[ "${{ env.UBLUE_FLAVOR }}" == "main" ]]; then
+                  echo "IMAGE_NAME=${{ env.BAZZITE_VARIANT }}" >> $GITHUB_ENV
+              else
+                  echo "IMAGE_NAME=${{ format('{0}-{1}', env.BAZZITE_VARIANT, env.UBLUE_FLAVOR) }}" >> $GITHUB_ENV
+              fi
+          fi
+
+      - name: Get base image version
+        id: labels
+        run: |
+          ver=$(skopeo inspect docker://ghcr.io/${{ github.repository_owner }}/ublue-${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}:${{ env.FEDORA_MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
+          echo "VERSION=$ver" >> $GITHUB_OUTPUT
+
+      - name: Generate image metadata
+        uses: docker/metadata-action@v4
+        id: meta
+        with:
+          images: ublue-${{ env.IMAGE_NAME }}
+          labels: |
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
+            org.opencontainers.image.description=Bazzite is an OCI image that serves as an alternative operating system for the Steam Deck, and a ready-to-game SteamOS-like for desktop computers and living room home theater PCs.
+            io.artifacthub.package.readme-url=https://raw.githubusercontent.com/ublue-os/bazzite/main/README.md
+            io.artifacthub.package.logo-url=https://raw.githubusercontent.com/ublue-os/bazzite/main/repo_content/logo.png
+
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
         with:
           containerfiles: |
             ./Containerfile
-          image: ublueos-bazzite-deck
-          tags: 38 latest
+          image: ublue-${{ env.IMAGE_NAME }}
+          tags: ${{ env.FEDORA_MAJOR_VERSION }} latest
           build-args: |
-            IMAGE_NAME=bazzite-deck
-            IMAGE_FLAVOR=main
-            BASE_IMAGE_NAME=kinoite
-            FEDORA_MAJOR_VERSION=38
+            IMAGE_NAME=${{ env.IMAGE_NAME }}
+            IMAGE_FLAVOR=${{ env.UBLUE_FLAVOR }}
+            BASE_IMAGE_NAME=${{ env.FEDORA_VARIANT }}
+            FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
+          labels: ${{ steps.meta.outputs.labels }}
           oci: false
           extra-args: |
-            --target=bazzite-deck
-      - name: Upload image
+            --target=${{ env.BAZZITE_VARIANT }}
+
+      - name: Upload image to GHCR
         uses: redhat-actions/push-to-registry@v2
         with:
           image: ${{ steps.build_image.outputs.image }}
@@ -96,3 +191,9 @@ jobs:
           password: ${{ github.token }}
           extra-args: |
             --disable-content-trust
+
+      - name: Upload image to private registry
+        env:
+          PRIVATE_REGISTRY_DOCKER_REFERENCE: ${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE }}
+        if: ${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE != '' }}
+        run: skopeo copy --dest-username "${{ secrets.PRIVATE_REGISTRY_USERNAME }}" --dest-password "${{ secrets.PRIVATE_REGISTRY_PASSWORD }}" containers-storage:${{ steps.build_image.outputs.image }}:latest docker://${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE }}
