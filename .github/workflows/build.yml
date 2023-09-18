@@ -1,0 +1,21 @@
+name: Build Everything
+on:
+  schedule:
+    - cron: '0 7 * * *'
+  workflow_dispatch:
+
+jobs:
+  build-kinoite:
+    runs-on: ubuntu-latest
+    container: 
+      image: quay.io/fedora-ostree-desktops/buildroot:latest
+      options: --privileged
+    steps:
+      - name: Clone repository
+        run: git clone --branch f38 --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git && pushd ci-test
+      - name: Build image
+        run: just compose-image kinoite
+      - name: Upload image
+        run: |
+          skopeo login --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" ghcr.io
+          skopeo copy --retry-times 3 "oci-archive:fedora-kinoite.ociarchive" "docker://ghcr.io/${{ github.actor }}/fedora-kinoite:38"
