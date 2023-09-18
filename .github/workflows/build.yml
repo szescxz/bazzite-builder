@@ -130,7 +130,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Maximize build disk space
-        uses: easimon/maximize-build-space@v8
+        run: |
+          echo "Before:"
+          df -h
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/lib/android
+          echo
+          echo "After:"
+          df -h
 
       - name: Clone repository
         uses: actions/checkout@v4
