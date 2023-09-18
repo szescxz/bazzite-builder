@@ -63,7 +63,7 @@ jobs:
           repository: ublue-os/main
 
       - name: Verify CI script checksum
-        run: echo "6308b4e14fb8bd32d02110169c3b25166ec990ef .github/workflows/build.yml" | sha1sum -c -
+        run: echo "eef7ca277f7f6ae5ac58bc5c28c384704dced8b4 .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
         run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
