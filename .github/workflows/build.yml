@@ -12,10 +12,12 @@ jobs:
       options: --privileged
     steps:
       - name: Clone repository
-        run: git clone --branch f38 --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git && pushd ci-test
+        run: git clone --branch f38 --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git build
       - name: Build image
+        working-directory: build
         run: just compose-image kinoite
       - name: Upload image
+        working-directory: build
         run: |
           skopeo login --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" ghcr.io
           skopeo copy --retry-times 3 "oci-archive:fedora-kinoite.ociarchive" "docker://ghcr.io/${{ github.actor }}/fedora-kinoite:38"
