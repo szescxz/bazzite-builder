@@ -5,7 +5,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-kinoite:
+  build-fedora:
+    permissions:
+      packages: write
     runs-on: ubuntu-latest
     container: 
       image: quay.io/fedora-ostree-desktops/buildroot:latest
@@ -19,5 +21,82 @@ jobs:
       - name: Upload image
         working-directory: build
         run: |
-          skopeo login --username "${{ github.actor }}" --password "${{ secrets.GITHUB_TOKEN }}" ghcr.io
-          skopeo copy --retry-times 3 "oci-archive:fedora-kinoite.ociarchive" "docker://ghcr.io/${{ github.actor }}/fedora-kinoite:38"
+          skopeo login --username "${{ github.actor }}" --password "${{ github.token }}" ghcr.io
+          skopeo copy --retry-times 3 "oci-archive:fedora-kinoite.ociarchive" "docker://ghcr.io/${{ github.repository_owner }}/fedora-kinoite:38"
+  build-ublue:
+    needs: build-fedora
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          repository: ublue-os/main
+          path: build
+      - name: Modify image source
+        run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./build/Containerfile
+      - name: Build image
+        id: build_image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          containerfiles: |
+            ./build/Containerfile
+          image: ublueos-kinoite-main
+          tags: 38 latest
+          build-args: |
+            IMAGE_NAME=kinoite-main
+            SOURCE_IMAGE=kinoite
+            FEDORA_MAJOR_VERSION=38
+          oci: false
+          extra-args: |
+            --target=main
+      - name: Upload image
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build_image.outputs.image }}
+          tags: ${{ steps.build_image.outputs.tags }}
+          registry: ghcr.io/${{ github.repository_owner }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          extra-args: |
+            --disable-content-trust
+  build-bazzite:
+    needs: build-ublue
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+        with:
+          repository: ublue-os/bazzite
+          path: build
+      - name: Modify image source
+        run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublueos-,g' ./build/Containerfile
+      - name: Build image
+        id: build_image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          containerfiles: |
+            ./build/Containerfile
+          image: ublueos-bazzite-deck
+          tags: 38 latest
+          build-args: |
+            IMAGE_NAME=bazzite-deck
+            IMAGE_FLAVOR=main
+            BASE_IMAGE_NAME=kinoite
+            FEDORA_MAJOR_VERSION=38
+          oci: false
+          extra-args: |
+            --target=bazzite-deck
+      - name: Upload image
+        uses: redhat-actions/push-to-registry@v2
+        with:
+          image: ${{ steps.build_image.outputs.image }}
+          tags: ${{ steps.build_image.outputs.tags }}
+          registry: ghcr.io/${{ github.repository_owner }}
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+          extra-args: |
+            --disable-content-trust
