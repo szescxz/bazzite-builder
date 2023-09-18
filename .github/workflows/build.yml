@@ -39,10 +39,8 @@ jobs:
       - name: Clone repository
         run: git clone --branch f${{ env.FEDORA_MAJOR_VERSION }} --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git .
 
-      - name: Check CI script revision
-        shell: bash
-        run: |
-          git config --global --add safe.directory '*' && [ $(git rev-list -1 HEAD .gitlab-ci.yml) == "2361eb63ec8c8cae34d46a7678002e3cb409bfef" ]
+      - name: Verify CI script checksum
+        run: echo "3cb261007fb0758f32311035552a88f0faf8fe7f .gitlab-ci.yml" | sha1sum -c -
 
       - name: Build image
         run: just compose-image ${{ env.FEDORA_VARIANT }}
@@ -64,9 +62,8 @@ jobs:
         with:
           repository: ublue-os/main
 
-      - name: Check CI script revision
-        shell: bash
-        run: '[ $(git rev-list -1 HEAD .github/workflows/build.yml) == "66ffdc67df1560582fbd7323bafb73a0ae90cf10" ]'
+      - name: Verify CI script checksum
+        run: echo "6308b4e14fb8bd32d02110169c3b25166ec990ef .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
         run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
@@ -81,7 +78,7 @@ jobs:
           echo "VERSION=$ver" >> $GITHUB_OUTPUT
 
       - name: Generate image metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         id: meta
         with:
           images: ublue-${{ env.IMAGE_NAME }}
@@ -128,14 +125,16 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build disk space
+        uses: easimon/maximize-build-space@v8
+
       - name: Clone repository
         uses: actions/checkout@v4
         with:
           repository: ublue-os/bazzite
 
-      - name: Check CI script revision
-        shell: bash
-        run: '[ $(git rev-list -1 HEAD .github/workflows/build.yml) == "afb16651367a79dc6a1728033e6b1a1c90d4cffc" ]'
+      - name: Verify CI script checksum
+        run: echo "f3ed8507ad3deeb7cb9a387ceee4fe11fe4d2a86 .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
         run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublue-,g' ./Containerfile
@@ -165,7 +164,7 @@ jobs:
           echo "VERSION=$ver" >> $GITHUB_OUTPUT
 
       - name: Generate image metadata
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         id: meta
         with:
           images: ublue-${{ env.IMAGE_NAME }}
