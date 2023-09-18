@@ -14,12 +14,10 @@ jobs:
       options: --privileged
     steps:
       - name: Clone repository
-        run: git clone --branch f38 --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git build
+        run: git clone --branch f38 --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git .
       - name: Build image
-        working-directory: build
         run: just compose-image kinoite
       - name: Upload image
-        working-directory: build
         run: |
           skopeo login --username "${{ github.actor }}" --password "${{ github.token }}" ghcr.io
           skopeo copy --retry-times 3 "oci-archive:fedora-kinoite.ociarchive" "docker://ghcr.io/${{ github.repository_owner }}/fedora-kinoite:38"
@@ -33,15 +31,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ublue-os/main
-          path: build
       - name: Modify image source
-        run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./build/Containerfile
+        run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
         with:
           containerfiles: |
-            ./build/Containerfile
+            ./Containerfile
           image: ublueos-kinoite-main
           tags: 38 latest
           build-args: |
@@ -71,15 +68,14 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ublue-os/bazzite
-          path: build
       - name: Modify image source
-        run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublueos-,g' ./build/Containerfile
+        run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublueos-,g' ./Containerfile
       - name: Build image
         id: build_image
         uses: redhat-actions/buildah-build@v2
         with:
           containerfiles: |
-            ./build/Containerfile
+            ./Containerfile
           image: ublueos-bazzite-deck
           tags: 38 latest
           build-args: |
