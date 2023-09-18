@@ -41,7 +41,8 @@ jobs:
 
       - name: Check CI script revision
         shell: bash
-        run: '[ $(git rev-list -1 HEAD .gitlab-ci.yml) == "2361eb63ec8c8cae34d46a7678002e3cb409bfef" ]'
+        run: |
+          git config --global --add safe.directory '*' && [ $(git rev-list -1 HEAD .gitlab-ci.yml) == "2361eb63ec8c8cae34d46a7678002e3cb409bfef" ]
 
       - name: Build image
         run: just compose-image ${{ env.FEDORA_VARIANT }}
