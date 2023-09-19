@@ -76,13 +76,15 @@ jobs:
         uses: actions/github-script@v6
         id: license
         env:
-          REPO: ${{ env.UBLUE_MAIN_REPO }}
+          REPOSITORY: ${{ env.UBLUE_MAIN_REPO }}
         with:
           script: |
-            const { REPO } = process.env
+            const { REPOSITORY } = process.env
+            const owner = REPOSITORY.split("/")[0]
+            const repo = REPOSITORY.split("/")[1]
             const resp = await octokit.rest.repos.get({
-              REPO.split("/")[0],
-              REPO.split("/")[1]
+              owner,
+              repo
             });
             return resp.data.license.spdx_id
           result-encoding: string
@@ -178,13 +180,15 @@ jobs:
         uses: actions/github-script@v6
         id: license
         env:
-          REPO: ${{ env.BAZZITE_REPO }}
+          REPOSITORY: ${{ env.BAZZITE_REPO }}
         with:
           script: |
-            const { REPO } = process.env
+            const { REPOSITORY } = process.env
+            const owner = REPOSITORY.split("/")[0]
+            const repo = REPOSITORY.split("/")[1]
             const resp = await octokit.rest.repos.get({
-              REPO.split("/")[0],
-              REPO.split("/")[1]
+              owner,
+              repo
             });
             return resp.data.license.spdx_id
           result-encoding: string
