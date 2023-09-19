@@ -72,6 +72,7 @@ jobs:
   build-ublue:
     name: Build Universal Blue container image
     needs: build-fedora
+    if: ${{ always() && !failure() && !cancelled() }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -166,6 +167,7 @@ jobs:
   build-bazzite:
     name: Build Bazzite container image
     needs: build-ublue
+    if: ${{ always() && !failure() && !cancelled() }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
