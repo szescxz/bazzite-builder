@@ -284,6 +284,7 @@ jobs:
 
       - name: Upload image to private registry
         env:
-          PRIVATE_REGISTRY_DOCKER_REFERENCE: "${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME }}:${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}"
-        if: ${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE != '' }}
-        run: skopeo copy --dest-creds "${{ secrets.PRIVATE_REGISTRY_USERNAME }}:${{ secrets.PRIVATE_REGISTRY_PASSWORD }}" containers-storage:localhost/${{ steps.build_image.outputs.image }}:latest docker://${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE }}
+          PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME: "${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME }}"
+          PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG: "${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}"
+        if: ${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME && env.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}
+        run: skopeo copy --retry-times 3 --dest-creds "${{ secrets.PRIVATE_REGISTRY_USERNAME }}:${{ secrets.PRIVATE_REGISTRY_PASSWORD }}" containers-storage:localhost/${{ steps.build_image.outputs.image }}:latest docker://${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME }}:${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}
