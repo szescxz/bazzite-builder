@@ -4,8 +4,8 @@ on:
     - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
-      skip-build-fedora:
-        description: Enable to skip building Fedora image
+      skip-build-base:
+        description: Enable to skip building Fedora and Universal Blue image
         type: boolean
       fedora-major-version:
         description: Fedora major version
@@ -13,9 +13,6 @@ on:
       fedora-variant:
         description: Fedora variant
         default: kinoite
-      skip-build-ublue:
-        description: Enable to skip building Universal Blue image
-        type: boolean
       ublue-main-repo:
         description: ublue-os/main repository to use
         default: ublue-os/main
@@ -49,7 +46,7 @@ env:
 jobs:
   build-fedora:
     name: Build Fedora container image
-    if: ${{ !github.event.inputs.skip-build-fedora }}
+    if: ${{ !github.event.inputs.skip-build-base }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -75,7 +72,7 @@ jobs:
   build-ublue:
     name: Build Universal Blue container image
     needs: build-fedora
-    if: ${{ !github.event.inputs.skip-build-fedora && !failure() && !cancelled() }}
+    if: ${{ !github.event.inputs.skip-build-base && !failure() && !cancelled() }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
