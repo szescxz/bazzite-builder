@@ -13,6 +13,9 @@ on:
       ublue-main-repo:
         description: ublue-os/main repository to use
         default: ublue-os/main
+      ublue-main-repo-ref:
+        description: ublue-os/main branch/commit to use
+        default: ""
       ublue-flavor:
         description: Universal Blue flavor
         default: main
@@ -22,6 +25,9 @@ on:
       bazzite-repo:
         description: ublue-os/bazzite repository to use
         default: ublue-os/bazzite
+      bazzite-repo-ref:
+        description: ublue-os/bazzite branch/commit to use
+        default: ""
       bazzite-variant:
         description: Bazzite variant
         default: bazzite-deck
@@ -85,6 +91,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.UBLUE_MAIN_REPO }}
+
+      - name: Checkout specific branch/commit
+        if: ${{ github.event.inputs.ublue-main-repo-ref }}
+        run: git checkout ${{ github.event.inputs.ublue-main-repo-ref }}
 
       - name: Verify CI script checksum
         if: ${{ github.event_name == 'schedule' }}
@@ -183,6 +193,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.BAZZITE_REPO }}
+
+      - name: Checkout specific branch/commit
+        if: ${{ github.event.inputs.bazzite-repo-ref }}
+        run: git checkout ${{ github.event.inputs.bazzite-repo-ref }}
 
       - name: Verify CI script checksum
         if: ${{ github.event_name == 'schedule' }}
