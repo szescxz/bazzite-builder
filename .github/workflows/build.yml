@@ -13,6 +13,9 @@ on:
       fedora-variant:
         description: Fedora variant
         default: kinoite
+      skip-build-ublue:
+        description: Enable to skip building Universal Blue image
+        type: boolean
       ublue-main-repo:
         description: ublue-os/main repository to use
         default: ublue-os/main
@@ -72,7 +75,7 @@ jobs:
   build-ublue:
     name: Build Universal Blue container image
     needs: build-fedora
-    if: ${{ always() && !failure() && !cancelled() }}
+    if: ${{ !github.event.inputs.skip-build-fedora && !failure() && !cancelled() }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -98,10 +101,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.UBLUE_MAIN_REPO }}
-
-      - name: Checkout specific branch/commit
-        if: ${{ github.event.inputs.ublue-main-repo-ref }}
-        run: git checkout ${{ github.event.inputs.ublue-main-repo-ref }}
+          ref: ${{ github.event.inputs.ublue-main-repo-ref }}
 
       - name: Verify CI script checksum
         if: ${{ github.event_name == 'schedule' }}
@@ -203,10 +203,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.BAZZITE_REPO }}
-
-      - name: Checkout specific branch/commit
-        if: ${{ github.event.inputs.bazzite-repo-ref }}
-        run: git checkout ${{ github.event.inputs.bazzite-repo-ref }}
+          ref: ${{ github.event.inputs.bazzite-repo-ref }}
 
       - name: Verify CI script checksum
         if: ${{ github.event_name == 'schedule' }}
