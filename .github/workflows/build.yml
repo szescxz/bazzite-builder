@@ -48,6 +48,7 @@ jobs:
         run: git clone --branch f${{ env.FEDORA_MAJOR_VERSION }} --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git .
 
       - name: Verify CI script checksum
+        if: ${{ github.event_name == 'schedule' }}
         run: echo "3cb261007fb0758f32311035552a88f0faf8fe7f .gitlab-ci.yml" | sha1sum -c -
 
       - name: Build image
