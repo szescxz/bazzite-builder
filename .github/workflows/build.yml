@@ -10,20 +10,28 @@ on:
       fedora-variant:
         description: Fedora variant
         default: kinoite
+      ublue-main-repo:
+        description: ublue-os/main repository to use
+        default: ublue-os/main
       ublue-flavor:
         description: Universal Blue flavor
         default: main
       ublue-nvidia-version:
         description: NVIDIA driver version if building `nvidia` flavor
         default: "0"
+      bazzite-repo:
+        description: ublue-os/bazzite repository to use
+        default: ublue-os/bazzite
       bazzite-variant:
         description: Bazzite variant
         default: bazzite-deck
 env:
   FEDORA_MAJOR_VERSION: ${{ github.event.inputs.fedora-major-version || '38' }}
   FEDORA_VARIANT: ${{ github.event.inputs.fedora-variant || 'kinoite' }}
+  UBLUE_MAIN_REPO: ${{ github.event.inputs.ublue-main-repo || 'ublue-os/main' }}
   UBLUE_FLAVOR: ${{ github.event.inputs.ublue-flavor || 'main' }}
   UBLUE_NVIDIA_VERSION: ${{ github.event.inputs.ublue-nvidia-version || '0' }}
+  BAZZITE_REPO: ${{ github.event.inputs.bazzite-repo || 'ublue-os/bazzite' }}
   BAZZITE_VARIANT: ${{ github.event.inputs.bazzite-variant || 'bazzite-deck' }}
 
 jobs:
@@ -57,12 +65,28 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     steps:
+      - name: Fetch repository LICENSE information
+        uses: actions/github-script@v6
+        id: license
+        env:
+          REPO: ${{ env.UBLUE_MAIN_REPO }}
+        with:
+          script: |
+            const { REPO } = process.env
+            const resp = await octokit.rest.repos.get({
+              REPO.split("/")[0],
+              REPO.split("/")[1]
+            });
+            return resp.data.license.spdx_id
+          result-encoding: string
+
       - name: Clone repository
         uses: actions/checkout@v4
         with:
-          repository: ublue-os/main
+          repository: ${{ env.UBLUE_MAIN_REPO }}
 
       - name: Verify CI script checksum
+        if: ${{ github.event_name == 'schedule' }}
         run: echo "eef7ca277f7f6ae5ac58bc5c28c384704dced8b4 .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
@@ -84,9 +108,9 @@ jobs:
           context: git
           images: ublue-${{ env.IMAGE_NAME }}
           labels: |
-            org.opencontainers.image.source=https://github.com/ublue-os/main
-            org.opencontainers.image.url=https://github.com/ublue-os/main
-            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.source=https://github.com/${{ env.UBLUE_MAIN_REPO }}
+            org.opencontainers.image.url=https://github.com/${{ env.UBLUE_MAIN_REPO }}
+            org.opencontainers.image.licenses=${{ steps.license.outputs.result }}
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
             org.opencontainers.image.description=A base Universal Blue ${{ env.FEDORA_VARIANT }} image with batteries included${{ 'nvidia' == env.UBLUE_FLAVOR && ' and Nvidia drivers added' || '' }}
@@ -139,12 +163,28 @@ jobs:
           echo "After:"
           df -h
 
+      - name: Fetch repository LICENSE information
+        uses: actions/github-script@v6
+        id: license
+        env:
+          REPO: ${{ env.BAZZITE_REPO }}
+        with:
+          script: |
+            const { REPO } = process.env
+            const resp = await octokit.rest.repos.get({
+              REPO.split("/")[0],
+              REPO.split("/")[1]
+            });
+            return resp.data.license.spdx_id
+          result-encoding: string
+
       - name: Clone repository
         uses: actions/checkout@v4
         with:
-          repository: ublue-os/bazzite
+          repository: ${{ env.BAZZITE_REPO }}
 
       - name: Verify CI script checksum
+        if: ${{ github.event_name == 'schedule' }}
         run: echo "f3ed8507ad3deeb7cb9a387ceee4fe11fe4d2a86 .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
@@ -181,9 +221,9 @@ jobs:
           context: git
           images: ublue-${{ env.IMAGE_NAME }}
           labels: |
-            org.opencontainers.image.source=https://github.com/ublue-os/bazzite
-            org.opencontainers.image.url=https://github.com/ublue-os/bazzite
-            org.opencontainers.image.licenses=Apache-2.0
+            org.opencontainers.image.source=https://github.com/${{ env.BAZZITE_REPO }}
+            org.opencontainers.image.url=https://github.com/${{ env.BAZZITE_REPO }}
+            org.opencontainers.image.licenses=${{ steps.license.outputs.result }}
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
             org.opencontainers.image.description=Bazzite is an OCI image that serves as an alternative operating system for the Steam Deck, and a ready-to-game SteamOS-like for desktop computers and living room home theater PCs.
