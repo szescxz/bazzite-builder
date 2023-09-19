@@ -110,22 +110,24 @@ jobs:
       - name: Generate build variables
         run: echo "IMAGE_NAME=${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}" >> $GITHUB_ENV
 
-      - name: Get base image version
+      - name: Get revision and base image version
         id: labels
         run: |
           ver=$(skopeo inspect docker://ghcr.io/${{ github.repository_owner }}/fedora-${{ env.FEDORA_VARIANT }}:${{ env.FEDORA_MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
           echo "VERSION=$ver" >> $GITHUB_OUTPUT
+          sha=$(git show --format=%H HEAD --quiet --)
+          echo "REVISION=$sha" >> $GITHUB_OUTPUT
 
       - name: Generate image metadata
         uses: docker/metadata-action@v5
         id: meta
         with:
-          context: git
           images: ublue-${{ env.IMAGE_NAME }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ env.UBLUE_MAIN_REPO }}
             org.opencontainers.image.url=https://github.com/${{ env.UBLUE_MAIN_REPO }}
             org.opencontainers.image.licenses=${{ steps.license.outputs.result }}
+            org.opencontainers.image.revision=${{ steps.labels.outputs.REVISION }}
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
             org.opencontainers.image.description=A base Universal Blue ${{ env.FEDORA_VARIANT }} image with batteries included${{ 'nvidia' == env.UBLUE_FLAVOR && ' and Nvidia drivers added' || '' }}
@@ -232,17 +234,19 @@ jobs:
         run: |
           ver=$(skopeo inspect docker://ghcr.io/${{ github.repository_owner }}/ublue-${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}:${{ env.FEDORA_MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
           echo "VERSION=$ver" >> $GITHUB_OUTPUT
+          sha=$(git show --format=%H HEAD --quiet --)
+          echo "REVISION=$sha" >> $GITHUB_OUTPUT
 
       - name: Generate image metadata
         uses: docker/metadata-action@v5
         id: meta
         with:
-          context: git
           images: ublue-${{ env.IMAGE_NAME }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ env.BAZZITE_REPO }}
             org.opencontainers.image.url=https://github.com/${{ env.BAZZITE_REPO }}
             org.opencontainers.image.licenses=${{ steps.license.outputs.result }}
+            org.opencontainers.image.revision=${{ steps.labels.outputs.REVISION }}
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
             org.opencontainers.image.description=Bazzite is an OCI image that serves as an alternative operating system for the Steam Deck, and a ready-to-game SteamOS-like for desktop computers and living room home theater PCs.
