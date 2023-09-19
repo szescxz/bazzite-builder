@@ -229,7 +229,7 @@ jobs:
               fi
           fi
 
-      - name: Get base image version
+      - name: Get revision and base image version
         id: labels
         run: |
           ver=$(skopeo inspect docker://ghcr.io/${{ github.repository_owner }}/ublue-${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}:${{ env.FEDORA_MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
