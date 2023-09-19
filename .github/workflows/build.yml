@@ -4,6 +4,9 @@ on:
     - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
+      skip-build-fedora:
+        description: Enable to skip building Fedora image
+        type: boolean
       fedora-major-version:
         description: Fedora major version
         default: "38"
@@ -43,6 +46,7 @@ env:
 jobs:
   build-fedora:
     name: Build Fedora container image
+    if: ${{ !github.event.inputs.skip-build-fedora }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -82,7 +86,7 @@ jobs:
             const { REPOSITORY } = process.env
             const owner = REPOSITORY.split("/")[0]
             const repo = REPOSITORY.split("/")[1]
-            const resp = await octokit.rest.repos.get({
+            const resp = await github.rest.repos.get({
               owner,
               repo
             });
@@ -186,7 +190,7 @@ jobs:
             const { REPOSITORY } = process.env
             const owner = REPOSITORY.split("/")[0]
             const repo = REPOSITORY.split("/")[1]
-            const resp = await octokit.rest.repos.get({
+            const resp = await github.rest.repos.get({
               owner,
               repo
             });
