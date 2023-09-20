@@ -58,8 +58,8 @@ jobs:
         run: git clone --branch f${{ env.FEDORA_MAJOR_VERSION }} --depth 1 --single-branch https://gitlab.com/fedora/ostree/ci-test.git .
 
       - name: Verify CI script checksum
-        if: ${{ github.event_name == 'schedule' }}
-        run: echo "3cb261007fb0758f32311035552a88f0faf8fe7f .gitlab-ci.yml" | sha1sum -c -
+        if: ${{ env.FEDORA_SCRIPT_CHECKSUM }}
+        run: echo "${{ env.FEDORA_SCRIPT_CHECKSUM }} .gitlab-ci.yml" | sha1sum -c -
 
       - name: Build image
         run: just compose-image ${{ env.FEDORA_VARIANT }}
@@ -101,8 +101,8 @@ jobs:
           ref: ${{ github.event.inputs.ublue-main-repo-ref }}
 
       - name: Verify CI script checksum
-        if: ${{ github.event_name == 'schedule' }}
-        run: echo "eef7ca277f7f6ae5ac58bc5c28c384704dced8b4 .github/workflows/build.yml" | sha1sum -c -
+        if: ${{ env.UBLUE_SCRIPT_CHECKSUM }}
+        run: echo "${{ env.UBLUE_SCRIPT_CHECKSUM }} .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
         run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
@@ -205,8 +205,8 @@ jobs:
           ref: ${{ github.event.inputs.bazzite-repo-ref }}
 
       - name: Verify CI script checksum
-        if: ${{ github.event_name == 'schedule' }}
-        run: echo "f3ed8507ad3deeb7cb9a387ceee4fe11fe4d2a86 .github/workflows/build.yml" | sha1sum -c -
+        if: ${{ env.BAZZITE_SCRIPT_CHECKSUM }}
+        run: echo "${{ env.BAZZITE_SCRIPT_CHECKSUM }} .github/workflows/build.yml" | sha1sum -c -
 
       - name: Modify image source
         run: sed -i 's,^ARG BASE_IMAGE="ghcr.io/ublue-os/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/ublue-,g' ./Containerfile
