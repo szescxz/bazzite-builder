@@ -46,7 +46,7 @@ env:
 jobs:
   build-fedora:
     name: Build Fedora container image
-    if: ${{ github.event.inputs.skip-build-base != true }}
+    if: ${{ github.event.inputs.skip-build-base != 'true' }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
@@ -72,7 +72,7 @@ jobs:
   build-ublue:
     name: Build Universal Blue container image
     needs: build-fedora
-    if: ${{ github.event.inputs.skip-build-base != true && !failure() && !cancelled() }}
+    if: ${{ github.event.inputs.skip-build-base != 'true' && !failure() && !cancelled() }}
     permissions:
       packages: write
     runs-on: ubuntu-latest
