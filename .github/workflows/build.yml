@@ -294,4 +294,4 @@ jobs:
           PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME: "${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME }}"
           PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG: "${{ secrets.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}"
         if: ${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME && env.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}
-        run: skopeo copy --preserve-digests --retry-times 10 --dest-creds "${{ secrets.PRIVATE_REGISTRY_USERNAME }}:${{ secrets.PRIVATE_REGISTRY_PASSWORD }}" docker://ghcr.io/${{ github.repository_owner }}/${{ jobs.build-bazzite.outputs.image }}:latest docker://${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME }}:${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}
+        run: skopeo copy --preserve-digests --retry-times 10 --dest-creds "${{ secrets.PRIVATE_REGISTRY_USERNAME }}:${{ secrets.PRIVATE_REGISTRY_PASSWORD }}" docker://ghcr.io/${{ github.repository_owner }}/${{ needs.build-bazzite.outputs.image }}:latest docker://${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_NAME }}:${{ env.PRIVATE_REGISTRY_DOCKER_REFERENCE_TAG }}
