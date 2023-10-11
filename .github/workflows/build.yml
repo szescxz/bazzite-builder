@@ -77,6 +77,9 @@ jobs:
       packages: write
     runs-on: ubuntu-latest
     steps:
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@v6
+
       - name: Fetch repository LICENSE information
         uses: actions/github-script@v6
         id: license
@@ -130,7 +133,7 @@ jobs:
             org.opencontainers.image.revision=${{ steps.labels.outputs.REVISION }}
             org.opencontainers.image.title=${{ env.IMAGE_NAME }}
             org.opencontainers.image.version=${{ steps.labels.outputs.VERSION }}
-            org.opencontainers.image.description=A base Universal Blue ${{ env.FEDORA_VARIANT }} image with batteries included${{ 'nvidia' == env.UBLUE_FLAVOR && ' and Nvidia drivers added' || '' }}
+            org.opencontainers.image.description=A base Universal Blue ${{ env.FEDORA_VARIANT }} image with batteries included
             io.artifacthub.package.readme-url=https://raw.githubusercontent.com/ublue-os/main/main/README.md
             io.artifacthub.package.logo-url=https://avatars.githubusercontent.com/u/120078124?s=200&v=4
 
@@ -146,7 +149,6 @@ jobs:
             IMAGE_NAME=${{ env.FEDORA_VARIANT }}
             SOURCE_IMAGE=${{ env.FEDORA_VARIANT }}
             FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
-            NVIDIA_MAJOR_VERSION=${{ env.UBLUE_NVIDIA_VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
           extra-args: |
