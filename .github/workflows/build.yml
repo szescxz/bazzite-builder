@@ -22,9 +22,6 @@ on:
       ublue-flavor:
         description: Universal Blue flavor
         default: main
-      ublue-nvidia-version:
-        description: NVIDIA driver version if building `nvidia` flavor
-        default: "0"
       bazzite-repo:
         description: ublue-os/bazzite repository to use
         default: ublue-os/bazzite
@@ -39,7 +36,6 @@ env:
   FEDORA_VARIANT: ${{ github.event.inputs.fedora-variant || 'kinoite' }}
   UBLUE_MAIN_REPO: ${{ github.event.inputs.ublue-main-repo || 'ublue-os/main' }}
   UBLUE_FLAVOR: ${{ github.event.inputs.ublue-flavor || 'main' }}
-  UBLUE_NVIDIA_VERSION: ${{ github.event.inputs.ublue-nvidia-version || '0' }}
   BAZZITE_REPO: ${{ github.event.inputs.bazzite-repo || 'ublue-os/bazzite' }}
   BAZZITE_VARIANT: ${{ github.event.inputs.bazzite-variant || 'bazzite-deck' }}
 
