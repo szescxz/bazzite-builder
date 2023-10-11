@@ -175,15 +175,8 @@ jobs:
     outputs:
       image: ${{ steps.build_image.outputs.image }}
     steps:
-      - name: Maximize build disk space
-        run: |
-          echo "Before:"
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /usr/local/lib/android
-          echo
-          echo "After:"
-          df -h
+      - name: Maximize build space
+        uses: ublue-os/remove-unwanted-software@v6
 
       - name: Fetch repository LICENSE information
         uses: actions/github-script@v6
@@ -218,18 +211,23 @@ jobs:
       - name: Generate build variables
         run: |
           echo "BASE_IMAGE_NAME=${{ env.FEDORA_VARIANT }}" >> $GITHUB_ENV
+          DESKTOP=""
           if [[ "${{ env.FEDORA_VARIANT }}" == "silverblue" ]]; then
-              DESKTOP="gnome"
-              if [[ "${{ env.UBLUE_FLAVOR }}" == "main" ]]; then
-                  echo "IMAGE_NAME=${{ format('{0}-{1}', env.BAZZITE_VARIANT, '${DESKTOP}') }}" >> $GITHUB_ENV
+              DESKTOP="-gnome"
+          fi
+          if [[ "${{ env.BAZZITE_VARIANT }}" == "bazzite-deck" ]]; then
+              if [[ "${{ env.UBLUE_FLAVOR }}" == "asus" ]]; then
+                  echo "IMAGE_NAME=${{ format('{0}{1}', 'bazzite-ally', '${DESKTOP}') }}" >> $GITHUB_ENV
+              elif [[ "${{ env.UBLUE_FLAVOR }}" == "framework" ]]; then
+                  echo "IMAGE_NAME=${{ format('{0}{1}', 'bazzite-framegame', '${DESKTOP}') }}" >> $GITHUB_ENV
               else
-                  echo "IMAGE_NAME=${{ format('{0}-{1}-{2}', env.BAZZITE_VARIANT, '${DESKTOP}', env.UBLUE_FLAVOR) }}" >> $GITHUB_ENV
+                  echo "IMAGE_NAME=${{ format('{0}{1}', 'bazzite-deck', '${DESKTOP}') }}" >> $GITHUB_ENV
               fi
           else
               if [[ "${{ env.UBLUE_FLAVOR }}" == "main" ]]; then
-                  echo "IMAGE_NAME=${{ env.BAZZITE_VARIANT }}" >> $GITHUB_ENV
+                  echo "IMAGE_NAME=${{ format('{0}{1}', env.BAZZITE_VARIANT, '${DESKTOP}') }}" >> $GITHUB_ENV
               else
-                  echo "IMAGE_NAME=${{ format('{0}-{1}', env.BAZZITE_VARIANT, env.UBLUE_FLAVOR) }}" >> $GITHUB_ENV
+                  echo "IMAGE_NAME=${{ format('{0}{1}-{2}', env.BAZZITE_VARIANT, '${DESKTOP}', env.UBLUE_FLAVOR) }}" >> $GITHUB_ENV
               fi
           fi
 
