@@ -107,7 +107,15 @@ jobs:
         run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
 
       - name: Generate build variables
-        run: echo "IMAGE_NAME=${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}" >> $GITHUB_ENV
+        shell: bash
+        run: |
+          echo "IMAGE_NAME=${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}" >> $GITHUB_ENV
+          # FIXME: https://github.com/ublue-os/main/commit/4bec2a4283f17c8a2e3e0dfe4617e9bd23d90560
+          if [[ "${{ env.FEDORA_MAJOR_VERSION }}" -ge "39" || "${{ env.UBLUE_FLAVOR }}" == "nokmods" ]]; then
+              echo "UBLUE_TARGET=nokmods" >> $GITHUB_ENV
+          else
+              echo "UBLUE_TARGET=kmods" >> $GITHUB_ENV
+          fi
 
       - name: Get revision and base image version
         id: labels
@@ -148,7 +156,7 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
           extra-args: |
-            --target=${{ env.UBLUE_FLAVOR }}
+            --target=${{ env.UBLUE_TARGET }}
 
       - name: Upload image
         uses: redhat-actions/push-to-registry@v2
