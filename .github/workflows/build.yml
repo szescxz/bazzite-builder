@@ -234,6 +234,13 @@ jobs:
                   echo "IMAGE_NAME=${{ format('{0}{1}-{2}', env.BAZZITE_VARIANT, '${DESKTOP}', env.UBLUE_FLAVOR) }}" >> $GITHUB_ENV
               fi
           fi
+          if [[ "${{ env.UBLUE_FLAVOR }}" =~ "asus" ]]; then
+              echo "AKMODS_FLAVOR=asus" >> $GITHUB_ENV
+          elif [[ "${{ env.UBLUE_FLAVOR }}" =~ "surface" ]]; then
+              echo "AKMODS_FLAVOR=surface" >> $GITHUB_ENV
+          else
+              echo "AKMODS_FLAVOR=main" >> $GITHUB_ENV
+          fi
 
       - name: Get revision and base image version
         id: labels
@@ -272,6 +279,7 @@ jobs:
             IMAGE_FLAVOR=${{ env.UBLUE_FLAVOR }}
             BASE_IMAGE_NAME=${{ env.FEDORA_VARIANT }}
             FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
+            AKMODS_FLAVOR=${{ env.AKMODS_FLAVOR }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
           extra-args: |
