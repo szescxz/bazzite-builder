@@ -242,6 +242,8 @@ jobs:
               echo "AKMODS_FLAVOR=main" >> $GITHUB_ENV
           fi
 
+          echo "BAZZITE_VENDOR=${{ env.BAZZITE_REPO }}" | cut -d'/' -f1 >> $GITHUB_ENV
+
       - name: Get revision and base image version
         id: labels
         run: |
@@ -277,6 +279,7 @@ jobs:
           build-args: |
             IMAGE_NAME=${{ env.IMAGE_NAME }}
             IMAGE_FLAVOR=${{ env.UBLUE_FLAVOR }}
+            IMAGE_VENDOR=${{ env.BAZZITE_VENDOR }}
             BASE_IMAGE_NAME=${{ env.FEDORA_VARIANT }}
             FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
             AKMODS_FLAVOR=${{ env.AKMODS_FLAVOR }}
