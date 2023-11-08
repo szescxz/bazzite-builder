@@ -9,7 +9,7 @@ on:
         type: boolean
       fedora-major-version:
         description: Fedora major version
-        default: "38"
+        default: "39"
       fedora-variant:
         description: Fedora variant
         default: kinoite
@@ -32,7 +32,7 @@ on:
         description: Bazzite variant
         default: bazzite-deck
 env:
-  FEDORA_MAJOR_VERSION: ${{ github.event.inputs.fedora-major-version || '38' }}
+  FEDORA_MAJOR_VERSION: ${{ github.event.inputs.fedora-major-version || '39' }}
   FEDORA_VARIANT: ${{ github.event.inputs.fedora-variant || 'kinoite' }}
   UBLUE_MAIN_REPO: ${{ github.event.inputs.ublue-main-repo || 'ublue-os/main' }}
   UBLUE_FLAVOR: ${{ github.event.inputs.ublue-flavor || 'main' }}
