@@ -1,7 +1,7 @@
 name: Build Everything
 on:
   schedule:
-    - cron: "0 7 * * *"
+    - cron: "0 15 * * *"
   workflow_dispatch:
     inputs:
       skip-build-base:
@@ -40,6 +40,7 @@ env:
   BAZZITE_VARIANT: ${{ github.event.inputs.bazzite-variant || 'bazzite-deck' }}
 
 jobs:
+  # FIXME: Remove once https://github.com/ublue-os/main/commit/bfd786e8988faa374438d632fa1e34282a59a067 is reverted
   build-fedora:
     name: Build Fedora container image
     if: ${{ github.event.inputs.skip-build-base != 'true' }}
@@ -103,13 +104,28 @@ jobs:
         if: ${{ vars.UBLUE_SCRIPT_CHECKSUM }}
         run: echo "${{ vars.UBLUE_SCRIPT_CHECKSUM }} .github/workflows/build.yml" | sha1sum -c -
 
+      # FIXME: Remove once https://github.com/ublue-os/main/commit/bfd786e8988faa374438d632fa1e34282a59a067 is reverted
       - name: Modify image source
-        run: sed -i 's,^ARG BASE_IMAGE="quay.io/fedora-ostree-desktops/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
+        run: sed -i 's,^ARG BASE_IMAGE="quay.io/\${SOURCE_ORG}/,ARG BASE_IMAGE="ghcr.io/${{ github.repository_owner }}/fedora-,g' ./Containerfile
 
       - name: Generate build variables
         shell: bash
         run: |
           echo "IMAGE_NAME=${{ env.FEDORA_VARIANT }}-${{ env.UBLUE_FLAVOR }}" >> $GITHUB_ENV
+
+          if [[ "${{ env.FEDORA_MAJOR_VERSION }}" -ge "39" ]] && \
+            grep "${{ env.FEDORA_VARIANT }}" <<< "silverblue, kinoite, sericea"; then
+              echo "SOURCE_ORG=fedora" >> $GITHUB_ENV
+              echo "SOURCE_IMAGE=fedora-${{ env.FEDORA_VARIANT }}" >> $GITHUB_ENV
+          else
+              if [[ "${{ env.FEDORA_VARIANT }}" == "lxqt" || "${{ env.FEDORA_VARIANT }}" == "mate" ]]; then
+                  echo "SOURCE_IMAGE=base" >> $GITHUB_ENV
+              else
+                  echo "SOURCE_IMAGE=${{ env.FEDORA_VARIANT }}" >> $GITHUB_ENV
+              fi
+              echo "SOURCE_ORG=fedora-ostree-desktops" >> $GITHUB_ENV
+          fi
+
           # FIXME: https://github.com/ublue-os/main/commit/4bec2a4283f17c8a2e3e0dfe4617e9bd23d90560
           if [[ "${{ env.FEDORA_MAJOR_VERSION }}" -ge "39" || "${{ env.UBLUE_FLAVOR }}" == "nokmods" ]]; then
               echo "UBLUE_TARGET=nokmods" >> $GITHUB_ENV
@@ -120,6 +136,7 @@ jobs:
       - name: Get revision and base image version
         id: labels
         run: |
+          # FIXME: Update once https://github.com/ublue-os/main/commit/bfd786e8988faa374438d632fa1e34282a59a067 is reverted
           ver=$(skopeo inspect docker://ghcr.io/${{ github.repository_owner }}/fedora-${{ env.FEDORA_VARIANT }}:${{ env.FEDORA_MAJOR_VERSION }} | jq -r '.Labels["org.opencontainers.image.version"]')
           echo "VERSION=$ver" >> $GITHUB_OUTPUT
           sha=$(git show --format=%H HEAD --quiet --)
@@ -151,7 +168,8 @@ jobs:
           tags: ${{ env.FEDORA_MAJOR_VERSION }}
           build-args: |
             IMAGE_NAME=${{ env.FEDORA_VARIANT }}
-            SOURCE_IMAGE=${{ env.FEDORA_VARIANT }}
+            SOURCE_ORG=${{ env.SOURCE_ORG }}
+            SOURCE_IMAGE=${{ env.FEDORA_VARIANT }} # FIXME: Update once https://github.com/ublue-os/main/commit/bfd786e8988faa374438d632fa1e34282a59a067 is reverted
             FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
