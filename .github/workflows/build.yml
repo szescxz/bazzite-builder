@@ -166,10 +166,11 @@ jobs:
             ./Containerfile
           image: ublue-${{ env.IMAGE_NAME }}
           tags: ${{ env.FEDORA_MAJOR_VERSION }}
+          # FIXME: Update SOURCE_IMAGE https://github.com/ublue-os/main/commit/bfd786e8988faa374438d632fa1e34282a59a067 is reverted
           build-args: |
             IMAGE_NAME=${{ env.FEDORA_VARIANT }}
             SOURCE_ORG=${{ env.SOURCE_ORG }}
-            SOURCE_IMAGE=${{ env.FEDORA_VARIANT }} # FIXME: Update once https://github.com/ublue-os/main/commit/bfd786e8988faa374438d632fa1e34282a59a067 is reverted
+            SOURCE_IMAGE=${{ env.FEDORA_VARIANT }}
             FEDORA_MAJOR_VERSION=${{ env.FEDORA_MAJOR_VERSION }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: false
